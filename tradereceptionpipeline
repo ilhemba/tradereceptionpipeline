@@ -1,0 +1,139 @@
+pipeline {
+
+      agent none
+      
+
+    stages {
+        
+    stage("clean queues") {
+     agent { 
+                label 'master1'
+            }
+        steps {
+           
+            echo "clean queues"
+             bat '''
+
+            call C:\\Users\\e5613657\\Downloads\\apache-activemq-5.15.11-bin\\apache-activemq-5.15.11\\bin\\activemq-admin purge --msgsel
+            '''
+        }
+    }
+    
+        
+    stage("clean WorkingData") {
+     agent { 
+                label 'node3'
+            }
+        steps {
+           
+            echo "workingData"
+            //cd C:/Users
+           
+            sh script:'''
+          #!/bin/bash
+           cd /home/ilhem/Desktop
+           ./cleanscript.sh
+          
+              
+        '''
+        
+        }
+    }
+    
+        
+    
+    stage('Run activemq & xsimulator & SGW') {
+    
+    parallel {
+        
+    stage("start activemq1"){
+        agent { 
+                label 'master1'
+            }
+        steps {
+           
+            echo "start activemq1"
+            //cd C:/Users
+           
+            bat '''
+
+        call C:\\Users\\e5613657\\Downloads\\apache-activemq-5.15.11-bin\\apache-activemq-5.15.11\\bin\\activemq start
+        
+       
+        
+    '''
+        }
+    }
+    
+        
+   stage("start activemq2"){
+        agent { 
+                label 'master1'
+            }
+        steps {
+    
+     bat '''
+
+        
+        call C:\\Users\\e5613657\\Downloads\\apache-activemq-5.15.11-bin\\apache-activemq-5.15.11\\bin\\activemq query -QQueue=CCP_OUT --view EnqueueCount,DequeueCount > f.txt
+        
+    '''
+        }
+   }
+   
+        
+
+   
+   
+    stage("start Xsimulator") {
+           agent { 
+                label 'master1'
+            }
+        
+        steps {
+            echo "start Xsimulator"
+            
+            
+                    bat '''
+
+  type C:\\Users\\e5613657\\Downloads\\Performance-Benchmark-tools\\Perfomance-Benchmark-tools\\xSimulator-1.0.1\\config\\xsimulator-tradereception.properties >= config 
+     
+    type config >  C:\\Users\\e5613657\\Downloads\\Performance-Benchmark-tools\\Perfomance-Benchmark-tools\\xSimulator-1.0.1\\config\\xsimulator.properties  
+     
+     '''
+                bat '''
+               
+             
+                call C:\\Users\\e5613657\\Downloads\\Performance-Benchmark-tools\\Perfomance-Benchmark-tools\\xSimulator-1.0.1\\TestStartUp.bat
+        
+          
+   
+    '''
+     
+        }
+    }
+    stage("start gateway") {
+        agent {label 'node3'}
+        
+        steps {
+            echo "start gateway"
+        sh script:'''
+          #!/bin/bash
+          cd /home/ilhem/Desktop/bin
+          echo "This is $(pwd)"
+          ./gateway.sh start
+          sleep 1m
+          
+          
+        '''
+        
+    }
+        
+    
+    
+       
+    }
+}
+}
+}
+}
